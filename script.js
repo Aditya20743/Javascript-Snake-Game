@@ -1,6 +1,8 @@
 const board= document.getElementById('game-board');
 const instructionText = document.getElementById('instruction-text');
 const logo = document.getElementById('logo');
+const score = document.getElementById('score');
+const highScoreText = document.getElementById('highScore');
 
 // game variables
 let snake = [{x:10, y:10}];
@@ -13,6 +15,7 @@ generateFood=()=>{
     return {x,y};
 }
 let food = generateFood();
+let highScore = 0;
 let direction = 'right';
 let gameInterval;
 let gameSpeedDelay = 200;
@@ -41,18 +44,83 @@ drawSnake =()=>{
 
 // draw food function
 drawFood =()=>{
-    // if (gameStarted) {
+    if (gameStarted) {
         const foodElement = createGameElement('div', 'food');
-        setPosition(foodElement, food);
+        SetPosition(foodElement, food);
         board.appendChild(foodElement);
-    // }
+    }
 }
 
-draw =()=>{
+// Draw game map, snake, food
+function draw() {
     board.innerHTML = '';
     drawSnake();
     drawFood();
+    updateScore();
+  }
+
+// increase speed of snake
+increaseSpeed =()=>{
+    if(gameSpeedDelay>150){
+        gameSpeedDelay-= 5;
+    }
+    else if(gameSpeedDelay>100){
+        gameSpeedDelay-= 3;
+    }
+    else if(gameSpeedDelay>50){
+        gameSpeedDelay-= 2;
+    }
+    else{
+        gameSpeedDelay--;
+    }
+}  
+updateScore=()=>{
+    const currentScore = snake.length - 1;
+    score.textContent = currentScore.toString().padStart(3,'0');
 }
+
+updateHighScore=()=>{
+    highScore = Math.max(highScore, snake.length-1);
+    highScoreText.textContent = highScore.toString().padStart(3,'0');
+    highScoreText.style.display = 'block'
+}
+
+stopGame=()=>{
+    clearInterval(gameInterval);
+    gameStarted =false;
+    instructionText.style.display = 'block';
+    logo.style.display = 'block';
+}
+
+// reset game ftn
+resetGame=()=>{
+    updateHighScore();
+    stopGame();
+    snake = [{x:10 , y:10}];
+    food = generateFood();
+    direction = 'right';
+    gameSpeedDelay = 200;
+    updateScore();
+}
+
+
+// check collision with grid and itself
+checkCollision=()=>{
+    const head = snake[0];
+
+    if(head.x<1 || head.x>gridSize || head.y<1 || head.y>gridSize){
+        resetGame();
+    }
+
+    for(let i=1;i<snake.length;i++){
+        // checking the head overlap with snake other body part
+
+        if(head.x === snake[i].x && head.y === snake[i].y){
+            resetGame();
+        }
+    }
+}
+
 
 // Moving the snake
 move=()=>{
@@ -79,9 +147,11 @@ move=()=>{
 
     if(head.x === food.x && head.y === food.y){
         food= generateFood();
-        clearInterval(); // clear past interval to avoid errors
+        increaseSpeed();
+        clearInterval(gameInterval); // clear past interval to avoid errors
         gameInterval = setInterval(()=>{
             move();
+            checkCollision();
             draw();
         },gameSpeedDelay);
     }
@@ -96,7 +166,7 @@ startGame=()=>{
     logo.style.display= 'none';
     gameInterval = setInterval(()=>{
         move();
-        // checkCollision();
+        checkCollision();
         draw();
     }, gameSpeedDelay)
 }
